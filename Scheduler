@@ -1,0 +1,90 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package com.qbi.server;
+
+import com.mongodb.DBObject;
+import com.qbi.db.DBUtil;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestTemplate;
+
+/**
+ *
+ * @author Amit
+ */
+public class Scheduler {
+
+    private static final Logger logger = LoggerFactory.getLogger(Scheduler.class);
+
+//    @Scheduled(fixedDelay = 5000)
+    //@Scheduled(fixedRate = 5000)
+    public void demoServiceMethod() {
+
+        try {
+            DateFormat formatter = new SimpleDateFormat("hh:mm a");
+            Calendar cal = Calendar.getInstance();
+            Date currentTimeDefault = cal.getTime();
+            String currentTime = formatter.format(currentTimeDefault);
+            String currentDay = getDayOfWeek(cal.get(Calendar.DAY_OF_WEEK));
+
+            if (currentDay == null) {
+                logger.warn("Current Day will not in proper format :: currentDay " + currentDay);
+                throw new Exception();
+            }
+
+            ArrayList<DBObject> schdulerTaskList
+                    = DBUtil.ScheduleTaskFindByCurrentTimeAndCurrentDay("scheduler", currentTime, currentDay);
+
+            logger.info("Number of records found = " + schdulerTaskList.size());
+            
+            JSONParser jsonParser = new JSONParser();
+
+            for (DBObject schdulerTask : schdulerTaskList) {
+                JSONObject schdulerTaskObject = (JSONObject) jsonParser.parse(schdulerTask.toString());
+                String storeId = (String) schdulerTaskObject.get("storeId");
+                String userId = (String) schdulerTaskObject.get("UserId");
+
+                logger.info("API Call for storeId : " + storeId + ", UserId = " + userId);
+
+//                final String uri = "http://localhost:8080/QB-Integration/QBI/storeservice/storeservice/syncStore/" + storeId;
+//
+//                RestTemplate restTemplate = new RestTemplate();
+//                String result = restTemplate.getForObject(uri, String.class);
+            }
+        } catch (Exception e) {
+            logger.warn(e.getMessage(), e);
+        }
+    }
+
+    private String getDayOfWeek(int value) {
+        switch (value) {
+            case 1:
+                return "Sunday";
+            case 2:
+                return "Monday";
+            case 3:
+                return "Tuesday";
+            case 4:
+                return "Wednesday";
+            case 5:
+                return "Thursday";
+            case 6:
+                return "Friday";
+            case 7:
+                return "Saturday";
+            default:
+                return null;
+        }
+    }
+}
